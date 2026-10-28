@@ -1,30 +1,67 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
+import 'package:flutter_lab1/counter_logic.dart';
+import 'package:flutter_lab1/main.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:flutter_lab1/main.dart';
-
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  final counter = find.byKey(const Key('counterValue'));
+  final input = find.byKey(const Key('inputField'));
+  final apply = find.byKey(const Key('applyButton'));
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  String counterText(WidgetTester tester) =>
+      tester.widget<Text>(counter).data ?? '';
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  Future<void> submit(WidgetTester tester, String text) async {
+    await tester.enterText(input, text);
+    await tester.tap(apply);
+    await tester.pump();
+  }
+
+  testWidgets('starts at zero', (tester) async {
+    await tester.pumpWidget(const CounterApp());
+    expect(counterText(tester), '0');
+  });
+
+  testWidgets('increments by entered numbers', (tester) async {
+    await tester.pumpWidget(const CounterApp());
+
+    await submit(tester, '5');
+    expect(counterText(tester), '5');
+
+    await submit(tester, '-2');
+    expect(counterText(tester), '3');
+  });
+
+  testWidgets('resets on the magic command', (tester) async {
+    await tester.pumpWidget(const CounterApp());
+
+    await submit(tester, '10');
+    await submit(tester, resetCommand);
+
+    expect(counterText(tester), '0');
+    expect(find.text('Лічильник обнулено'), findsOneWidget);
+  });
+
+  testWidgets('shows an error and keeps the value on invalid input', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const CounterApp());
+
+    await submit(tester, '4');
+    await submit(tester, '1.5');
+
+    expect(counterText(tester), '4');
+    expect(find.byType(SnackBar), findsOneWidget);
+    expect(find.textContaining('не є цілим числом'), findsWidgets);
+  });
+
+  testWidgets('submits from the keyboard action', (tester) async {
+    await tester.pumpWidget(const CounterApp());
+
+    await tester.enterText(input, '7');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(counterText(tester), '7');
   });
 }
