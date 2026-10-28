@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_lab1/counter_logic.dart';
 
-/// Screen with a counter that changes based on text input.
 class CounterPage extends StatefulWidget {
   const CounterPage({super.key});
 
