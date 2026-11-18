@@ -12,9 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Same Flutter version as on the developer's machine, so CI and local
+      # `flutter analyze` agree. Newer releases deprecate
+      # package:flutter/material.dart in favour of package:material_ui.
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: 3.44.8
           cache: true
 
       - name: Install dependencies
