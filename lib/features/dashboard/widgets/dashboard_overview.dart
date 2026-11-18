@@ -4,6 +4,7 @@ import 'package:flutter_lab1/domain/entities/weather_station.dart';
 import 'package:flutter_lab1/features/dashboard/sensor_readings.dart';
 import 'package:flutter_lab1/features/dashboard/widgets/current_weather_card.dart';
 import 'package:flutter_lab1/features/dashboard/widgets/hourly_forecast_strip.dart';
+import 'package:flutter_lab1/features/dashboard/widgets/live_telemetry_section.dart';
 import 'package:flutter_lab1/features/dashboard/widgets/sensor_tile.dart';
 import 'package:flutter_lab1/features/shared/widgets/responsive_grid.dart';
 import 'package:flutter_lab1/features/shared/widgets/section_header.dart';
@@ -27,6 +28,8 @@ class DashboardOverview extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         CurrentWeatherCard(conditions: forecast.current),
+        const SectionHeader(title: 'MQTT-брокер'),
+        const LiveTelemetrySection(),
         const SectionHeader(title: 'Прогноз на сьогодні'),
         HourlyForecastStrip(items: forecast.hourly),
         if (station != null) ...[

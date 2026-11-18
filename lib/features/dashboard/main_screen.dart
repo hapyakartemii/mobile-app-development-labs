@@ -5,10 +5,13 @@ import 'package:flutter_lab1/domain/entities/app_user.dart';
 import 'package:flutter_lab1/domain/entities/forecast.dart';
 import 'package:flutter_lab1/domain/entities/weather_station.dart';
 import 'package:flutter_lab1/domain/repositories/station_repository.dart';
+import 'package:flutter_lab1/features/dashboard/station_live_sync.dart';
+import 'package:flutter_lab1/features/dashboard/station_navigation.dart';
+import 'package:flutter_lab1/features/dashboard/widgets/dashboard_app_bar.dart';
 import 'package:flutter_lab1/features/dashboard/widgets/dashboard_view.dart';
 import 'package:flutter_lab1/features/shared/widgets/app_message.dart';
-import 'package:flutter_lab1/features/shared/widgets/confirm_dialog.dart';
 import 'package:flutter_lab1/features/shared/widgets/loading_overlay.dart';
+import 'package:flutter_lab1/features/shared/widgets/offline_mode_dialog.dart';
 
 /// Dashboard with CRUD for the signed-in user's stations.
 /// All state lives here and changes only through [setState].
@@ -25,6 +28,7 @@ class _MainScreenState extends State<MainScreen> {
   WeatherForecast? _forecast;
   List<WeatherStation> _stations = const [];
   bool _isBusy = false;
+  StationLiveSync? _liveSync;
 
   IStationRepository get _repository => _scope.stationRepository;
 
@@ -32,6 +36,12 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _liveSync?.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -48,16 +58,25 @@ class _MainScreenState extends State<MainScreen> {
       _stations = stations;
       _forecast = forecast;
     });
+    // MQTT readings for a station update its card and are saved.
+    _liveSync = StationLiveSync(
+      telemetry: _scope.telemetryService,
+      repository: _repository,
+      userId: user.id,
+      currentStations: () => _stations,
+      onStationUpdated: (station) {
+        if (mounted) setState(() => _stations = _replaced(station));
+      },
+    )..start();
+    // Signed in from the saved session without network: warn once.
+    final isOnline = await _scope.connectivityService.isOnline();
+    if (!isOnline && mounted) await showOfflineModeDialog(context);
   }
 
   /// Opens the form; creates a new station, or updates [station] if given.
   Future<void> _saveStation([WeatherStation? station]) async {
-    final draft = await Navigator.pushNamed(
-      context,
-      AppRoutes.stationForm,
-      arguments: station,
-    );
-    if (draft is! StationDraft) return;
+    final draft = await openStationForm(context, station);
+    if (draft == null) return;
     if (station == null) {
       return _mutate('Станцію «${draft.name.trim()}» додано', (userId) async {
         final created = await _repository.createStation(userId, draft);
@@ -70,21 +89,18 @@ class _MainScreenState extends State<MainScreen> {
         station.id,
         draft,
       );
-      return [
-        for (final s in _stations)
-          if (s.id == updated.id) updated else s,
-      ];
+      return _replaced(updated);
     });
   }
 
+  /// Current list with [station] put in place of the one with its id.
+  List<WeatherStation> _replaced(WeatherStation station) => [
+    for (final s in _stations)
+      if (s.id == station.id) station else s,
+  ];
+
   Future<void> _deleteStation(WeatherStation station) async {
-    final confirmed = await showConfirmDialog(
-      context,
-      title: 'Видалити станцію?',
-      message: '«${station.name}» буде видалено разом з її даними.',
-      confirmLabel: 'Видалити',
-    );
-    if (!confirmed) return;
+    if (!await confirmStationDeletion(context, station)) return;
     await _mutate('Станцію «${station.name}» видалено', (userId) async {
       await _repository.deleteStation(userId, station.id);
       return [
@@ -120,16 +136,7 @@ class _MainScreenState extends State<MainScreen> {
     final forecast = _forecast;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Метеостанція'),
-        actions: [
-          IconButton(
-            tooltip: 'Профіль',
-            icon: const Icon(Icons.account_circle_outlined),
-            onPressed: () => Navigator.pushNamed(context, AppRoutes.profile),
-          ),
-        ],
-      ),
+      appBar: const DashboardAppBar(),
       floatingActionButton: forecast == null
           ? null
           : FloatingActionButton.extended(
@@ -145,11 +152,7 @@ class _MainScreenState extends State<MainScreen> {
                 forecast: forecast,
                 stations: _stations,
                 onAdd: _saveStation,
-                onOpen: (station) => Navigator.pushNamed(
-                  context,
-                  AppRoutes.stationDetails,
-                  arguments: station,
-                ),
+                onOpen: (station) => openStationDetails(context, station),
                 onEdit: _saveStation,
                 onDelete: _deleteStation,
               ),

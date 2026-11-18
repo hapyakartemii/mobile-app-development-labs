@@ -1,3 +1,5 @@
+import 'package:flutter_lab1/domain/entities/telemetry.dart';
+
 /// Latest values measured by a station.
 class StationMetrics {
   const StationMetrics({
@@ -18,6 +20,23 @@ class StationMetrics {
 
   /// m/s
   final double windSpeed;
+
+  double valueOf(SensorMetric metric) => switch (metric) {
+    SensorMetric.temperature => temperature,
+    SensorMetric.humidity => humidity.toDouble(),
+    SensorMetric.pressure => pressure.toDouble(),
+    SensorMetric.wind => windSpeed,
+  };
+
+  /// Returns new metrics with [metric] replaced; the others stay the same.
+  StationMetrics withValue(SensorMetric metric, double value) {
+    return StationMetrics(
+      temperature: metric == SensorMetric.temperature ? value : temperature,
+      humidity: metric == SensorMetric.humidity ? value.round() : humidity,
+      pressure: metric == SensorMetric.pressure ? value.round() : pressure,
+      windSpeed: metric == SensorMetric.wind ? value : windSpeed,
+    );
+  }
 }
 
 /// IoT weather station owned by a user.
@@ -41,17 +60,31 @@ class WeatherStation {
   final StationMetrics metrics;
 
   /// Returns a new station; the original stays unchanged.
-  WeatherStation copyWith({String? name, String? location}) {
+  WeatherStation copyWith({
+    String? name,
+    String? location,
+    bool? isOnline,
+    DateTime? updatedAt,
+    StationMetrics? metrics,
+  }) {
     return WeatherStation(
       id: id,
       name: name ?? this.name,
       location: location ?? this.location,
-      isOnline: isOnline,
+      isOnline: isOnline ?? this.isOnline,
       battery: battery,
-      updatedAt: updatedAt,
-      metrics: metrics,
+      updatedAt: updatedAt ?? this.updatedAt,
+      metrics: metrics ?? this.metrics,
     );
   }
+
+  /// Station after a live MQTT [reading]: that value replaced, marked
+  /// online and updated at the time the reading arrived.
+  WeatherStation withReading(TelemetryReading reading) => copyWith(
+    isOnline: true,
+    updatedAt: reading.receivedAt,
+    metrics: metrics.withValue(reading.metric, reading.value),
+  );
 }
 
 /// Fields the user enters when creating or editing a station.

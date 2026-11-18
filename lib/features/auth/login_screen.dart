@@ -36,10 +36,17 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     setState(() => _isLoading = true);
+    final scope = AppScope.of(context);
+    if (!await scope.connectivityService.isOnline()) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      return showAppMessage(context, noInternetMessage);
+    }
     try {
-      await AppScope.of(
-        context,
-      ).authRepository.login(email: _email.text, password: _password.text);
+      await scope.authRepository.login(
+        email: _email.text,
+        password: _password.text,
+      );
       if (!mounted) return;
       await AppRoutes.resetTo(context, AppRoutes.main);
     } on AuthException catch (error) {
