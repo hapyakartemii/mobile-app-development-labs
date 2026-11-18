@@ -15,6 +15,8 @@ abstract final class AppColors {
   static const Color seed = Color(0xFF0277BD);
   static const Color online = Color(0xFF2E7D32);
   static const Color offline = Color(0xFFC62828);
+  static const Color pending = Color(0xFFB26A00);
+  static const Color idle = Color(0xFF616161);
 }
 
 /// Single source of truth for the visual style.

@@ -6,6 +6,7 @@ import 'package:flutter_lab1/domain/validation/validators.dart';
 import 'package:flutter_lab1/features/auth/widgets/auth_layout.dart';
 import 'package:flutter_lab1/features/auth/widgets/auth_switch_link.dart';
 import 'package:flutter_lab1/features/shared/widgets/app_button.dart';
+import 'package:flutter_lab1/features/shared/widgets/app_message.dart';
 import 'package:flutter_lab1/features/shared/widgets/app_text_field.dart';
 import 'package:flutter_lab1/features/shared/widgets/notice_banner.dart';
 
@@ -38,8 +39,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     setState(() => _isLoading = true);
+    final scope = AppScope.of(context);
+    if (!await scope.connectivityService.isOnline()) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      return showAppMessage(context, noInternetMessage);
+    }
     try {
-      await AppScope.of(context).authRepository.register(
+      await scope.authRepository.register(
         name: _name.text,
         email: _email.text,
         password: _password.text,

@@ -7,6 +7,7 @@ import 'package:flutter_lab1/features/profile/widgets/profile_header.dart';
 import 'package:flutter_lab1/features/shared/formatters.dart';
 import 'package:flutter_lab1/features/shared/widgets/app_button.dart';
 import 'package:flutter_lab1/features/shared/widgets/app_message.dart';
+import 'package:flutter_lab1/features/shared/widgets/confirm_dialog.dart';
 import 'package:flutter_lab1/features/shared/widgets/info_tile.dart';
 import 'package:flutter_lab1/features/shared/widgets/page_body.dart';
 import 'package:flutter_lab1/features/shared/widgets/section_header.dart';
@@ -43,6 +44,13 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   }
 
   Future<void> _logout() async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Вийти з акаунта?',
+      message: 'Сесію буде завершено. Щоб увійти знову, знадобиться інтернет.',
+      confirmLabel: 'Вийти',
+    );
+    if (!confirmed || !mounted) return;
     setState(() => _isLoggingOut = true);
     await _scope.authRepository.logout();
     await _goToLogin();

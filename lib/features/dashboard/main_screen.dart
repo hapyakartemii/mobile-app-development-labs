@@ -9,6 +9,7 @@ import 'package:flutter_lab1/features/dashboard/widgets/dashboard_view.dart';
 import 'package:flutter_lab1/features/shared/widgets/app_message.dart';
 import 'package:flutter_lab1/features/shared/widgets/confirm_dialog.dart';
 import 'package:flutter_lab1/features/shared/widgets/loading_overlay.dart';
+import 'package:flutter_lab1/features/shared/widgets/offline_mode_dialog.dart';
 
 /// Dashboard with CRUD for the signed-in user's stations.
 /// All state lives here and changes only through [setState].
@@ -48,6 +49,9 @@ class _MainScreenState extends State<MainScreen> {
       _stations = stations;
       _forecast = forecast;
     });
+    // Signed in from the saved session without network: warn once.
+    final isOnline = await _scope.connectivityService.isOnline();
+    if (!isOnline && mounted) await showOfflineModeDialog(context);
   }
 
   /// Opens the form; creates a new station, or updates [station] if given.

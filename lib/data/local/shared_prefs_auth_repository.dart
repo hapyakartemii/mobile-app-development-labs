@@ -1,22 +1,29 @@
+import 'dart:math';
+
 import 'package:flutter_lab1/data/local/json_list_store.dart';
 import 'package:flutter_lab1/data/local/user_record.dart';
 import 'package:flutter_lab1/domain/entities/app_user.dart';
+import 'package:flutter_lab1/domain/entities/session.dart';
 import 'package:flutter_lab1/domain/repositories/auth_repository.dart';
+import 'package:flutter_lab1/domain/repositories/session_storage.dart';
 import 'package:flutter_lab1/domain/validation/validators.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// [IAuthRepository] backed by SharedPreferences: users as a JSON list,
-/// the session as the signed-in user's id.
+/// [IAuthRepository] with users (and password hashes) in SharedPreferences
+/// and the session token in [ISessionStorage] (encrypted storage).
 class SharedPrefsAuthRepository implements IAuthRepository {
-  SharedPrefsAuthRepository(this._prefs, {Duration latency = Duration.zero})
-    : _store = JsonListStore(_prefs, latency: latency);
+  SharedPrefsAuthRepository(
+    SharedPreferences prefs,
+    this._sessions, {
+    Duration latency = Duration.zero,
+  }) : _store = JsonListStore(prefs, latency: latency);
 
   static const usersKey = 'auth.users';
-  static const sessionKey = 'auth.session';
   static const _invalidCredentials = 'Невірний email або пароль';
 
-  final SharedPreferences _prefs;
+  final ISessionStorage _sessions;
   final JsonListStore _store;
+  final Random _random = Random.secure();
 
   @override
   Future<AppUser> register({
@@ -50,7 +57,7 @@ class SharedPrefsAuthRepository implements IAuthRepository {
       for (final existing in records) existing.toJson(),
       record.toJson(),
     ]);
-    await _prefs.setString(sessionKey, record.user.id);
+    await _startSession(record.user);
     return record.user;
   }
 
@@ -69,22 +76,37 @@ class SharedPrefsAuthRepository implements IAuthRepository {
       throw const AuthException(_invalidCredentials);
     }
 
-    await _prefs.setString(sessionKey, match.user.id);
+    await _startSession(match.user);
     return match.user;
   }
 
+  /// Auto-login: restores the user from the saved session, without
+  /// network, so it also works offline.
   @override
   Future<AppUser?> currentUser() async {
-    final id = _prefs.getString(sessionKey);
-    if (id == null) return null;
+    final session = await _sessions.read();
+    if (session == null) return null;
     final records = await _readRecords();
-    return records.where((record) => record.user.id == id).firstOrNull?.user;
+    final user = records
+        .where((record) => record.user.id == session.userId)
+        .firstOrNull
+        ?.user;
+    if (user == null) await _sessions.clear();
+    return user;
   }
 
   @override
-  Future<void> logout() async {
-    await _prefs.remove(sessionKey);
-  }
+  Future<void> logout() => _sessions.clear();
+
+  Future<void> _startSession(AppUser user) => _sessions.save(
+    Session(token: _newToken(), userId: user.id, createdAt: DateTime.now()),
+  );
+
+  /// 32 random bytes as hex, from a cryptographically secure generator.
+  String _newToken() => [
+    for (var i = 0; i < 32; i++)
+      _random.nextInt(256).toRadixString(16).padLeft(2, '0'),
+  ].join();
 
   Future<List<UserRecord>> _readRecords() async {
     final items = await _store.read(usersKey);
