@@ -70,7 +70,10 @@ class _MainScreenState extends State<MainScreen> {
         station.id,
         draft,
       );
-      return [for (final s in _stations) s.id == updated.id ? updated : s];
+      return [
+        for (final s in _stations)
+          if (s.id == updated.id) updated else s,
+      ];
     });
   }
 
