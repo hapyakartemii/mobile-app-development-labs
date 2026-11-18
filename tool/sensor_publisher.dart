@@ -9,9 +9,16 @@ import 'package:mqtt_client/mqtt_server_client.dart';
 /// Pretends to be a weather station: publishes readings to the same
 /// broker and topics the app listens to.
 ///
-/// Run from the project root:   dart run tool/sensor_publisher.dart
+/// Run from the project root:
+///   dart run tool/sensor_publisher.dart              → shared topics
+///   dart run tool/sensor_publisher.dart STATION_ID   → one station
+/// (the station id is shown on the station screen in the app).
 /// Stop with Ctrl+C.
-Future<void> main() async {
+Future<void> main(List<String> args) async {
+  final stationId = args.firstOrNull;
+  final topicBase = stationId == null
+      ? AppConfig.mqttTopicBase
+      : '${AppConfig.mqttTopicBase}/$stationId';
   final random = Random();
   final clientId = 'meteo_publisher_${random.nextInt(1 << 30)}';
   final client = MqttServerClient(AppConfig.mqttHost, clientId)
@@ -24,7 +31,7 @@ Future<void> main() async {
 
   stdout.writeln('Connecting to ${AppConfig.mqttHost}:${AppConfig.mqttPort}…');
   await client.connect();
-  stdout.writeln('Publishing to ${AppConfig.mqttTopicBase}/<metric> every 3 s');
+  stdout.writeln('Publishing to $topicBase/<metric> every 3 s');
 
   // Random walk, so values change smoothly like real sensors.
   var temperature = 18.0;
@@ -40,10 +47,10 @@ Future<void> main() async {
     pressure = drift(pressure, 2, 960, 1050);
     wind = drift(wind, 1.5, 0, 25);
 
-    _publish(client, 'temperature', temperature.toStringAsFixed(1));
-    _publish(client, 'humidity', humidity.toStringAsFixed(0));
-    _publish(client, 'pressure', pressure.toStringAsFixed(0));
-    _publish(client, 'wind', wind.toStringAsFixed(1));
+    _publish(client, topicBase, 'temperature', temperature.toStringAsFixed(1));
+    _publish(client, topicBase, 'humidity', humidity.toStringAsFixed(0));
+    _publish(client, topicBase, 'pressure', pressure.toStringAsFixed(0));
+    _publish(client, topicBase, 'wind', wind.toStringAsFixed(1));
     stdout.writeln();
   });
 
@@ -54,12 +61,17 @@ Future<void> main() async {
   exit(0);
 }
 
-void _publish(MqttServerClient client, String metric, String value) {
+void _publish(
+  MqttServerClient client,
+  String topicBase,
+  String metric,
+  String value,
+) {
   final payload = MqttClientPayloadBuilder()..addString(value);
   client.publishMessage(
-    '${AppConfig.mqttTopicBase}/$metric',
+    '$topicBase/$metric',
     MqttQos.atMostOnce,
     payload.payload!,
   );
-  stdout.writeln('→ ${AppConfig.mqttTopicBase}/$metric = $value');
+  stdout.writeln('→ $topicBase/$metric = $value');
 }

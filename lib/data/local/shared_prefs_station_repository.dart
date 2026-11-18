@@ -81,6 +81,19 @@ class SharedPrefsStationRepository implements IStationRepository {
     await _save(userId, remaining);
   }
 
+  @override
+  Future<void> saveLiveData(String userId, WeatherStation station) async {
+    final stations = await getStations(userId);
+    final index = stations.indexWhere((stored) => stored.id == station.id);
+    if (index == -1) return;
+    final updated = stations[index].copyWith(
+      isOnline: station.isOnline,
+      updatedAt: station.updatedAt,
+      metrics: station.metrics,
+    );
+    await _save(userId, [...stations]..[index] = updated);
+  }
+
   Future<void> _save(String userId, List<WeatherStation> stations) =>
       _store.write(keyFor(userId), [
         for (final station in stations) StationJson.encode(station),

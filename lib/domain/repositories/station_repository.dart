@@ -15,6 +15,10 @@ abstract interface class IStationRepository {
 
   /// Throws [StationException] if the station doesn't exist.
   Future<void> deleteStation(String userId, String stationId);
+
+  /// Saves values that arrived over MQTT (metrics, online state, time).
+  /// Name and location are kept as stored; a deleted station is ignored.
+  Future<void> saveLiveData(String userId, WeatherStation station);
 }
 
 /// Expected station failure with a message safe to show to the user.

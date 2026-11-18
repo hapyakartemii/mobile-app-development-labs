@@ -10,9 +10,13 @@ class TelemetryReading {
     required this.metric,
     required this.value,
     required this.receivedAt,
+    this.stationId,
   });
 
   final SensorMetric metric;
   final double value;
   final DateTime receivedAt;
+
+  /// Station the value belongs to, or `null` for the shared topic.
+  final String? stationId;
 }

@@ -1,20 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_lab1/app/app_config.dart';
 import 'package:flutter_lab1/app/app_scope.dart';
 import 'package:flutter_lab1/app/theme/app_theme.dart';
-import 'package:flutter_lab1/domain/entities/telemetry.dart';
 import 'package:flutter_lab1/features/dashboard/live_telemetry_controller.dart';
-import 'package:flutter_lab1/features/dashboard/sensor_readings.dart';
-import 'package:flutter_lab1/features/dashboard/widgets/sensor_tile.dart';
 import 'package:flutter_lab1/features/dashboard/widgets/telemetry_status_chip.dart';
 import 'package:flutter_lab1/features/shared/formatters.dart';
-import 'package:flutter_lab1/features/shared/widgets/responsive_grid.dart';
 import 'package:provider/provider.dart';
 
-/// Live values from the MQTT broker.
+/// Card with the MQTT broker connection on the dashboard.
 ///
 /// [ChangeNotifierProvider] creates the [LiveTelemetryController] when the
-/// dashboard opens and calls its `dispose` (cancelling all stream
-/// subscriptions) when the dashboard closes.
+/// dashboard opens (it connects to the broker) and calls its `dispose`
+/// when the dashboard closes (subscriptions cancelled, connection closed).
+/// The values themselves are shown on each station's screen.
 class LiveTelemetrySection extends StatelessWidget {
   const LiveTelemetrySection({super.key});
 
@@ -27,60 +25,57 @@ class LiveTelemetrySection extends StatelessWidget {
         telemetry: scope.telemetryService,
         connectivity: scope.connectivityService,
       )..start(),
-      child: const _LiveTelemetryView(),
+      child: const _BrokerCard(),
     );
   }
 }
 
-/// Rebuilt by `context.watch` on every `notifyListeners()` — i.e. on each
-/// MQTT message — while the rest of the dashboard stays untouched.
-class _LiveTelemetryView extends StatelessWidget {
-  const _LiveTelemetryView();
+/// Rebuilt by `context.watch` on every `notifyListeners()`: a new status
+/// or a message from any station.
+class _BrokerCard extends StatelessWidget {
+  const _BrokerCard();
 
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<LiveTelemetryController>();
-    final lastUpdate = controller.lastMessageAt;
-    final muted = Theme.of(context).textTheme.bodySmall?.copyWith(
-      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    final lastMessage = controller.lastMessageAt;
+    final theme = Theme.of(context);
+    final muted = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: AppSpacing.s,
-      children: [
-        Row(
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.m),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           spacing: AppSpacing.s,
           children: [
-            Expanded(
-              child: Text(
-                'Топік: ${controller.topic}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: muted,
-              ),
-            ),
-            TelemetryStatusChip(status: controller.status),
-          ],
-        ),
-        ResponsiveGrid(
-          children: [
-            for (final metric in SensorMetric.values)
-              SensorTile(
-                reading: SensorReading.of(
-                  metric,
-                  controller.latest(metric)?.value,
+            Row(
+              spacing: AppSpacing.s,
+              children: [
+                Icon(Icons.podcasts, color: theme.colorScheme.primary),
+                Expanded(
+                  child: Text(
+                    AppConfig.mqttHost,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall,
+                  ),
                 ),
-              ),
+                TelemetryStatusChip(status: controller.status),
+              ],
+            ),
+            Text('Підписка: ${controller.topic}', style: muted),
+            Text(
+              lastMessage == null
+                  ? 'Повідомлень ще не було. Відкрийте станцію, скопіюйте її '
+                        'MQTT-топік і надсилайте дані туди.'
+                  : 'Останнє повідомлення: ${Formatters.relative(lastMessage)}',
+              style: muted,
+            ),
           ],
         ),
-        Text(
-          lastUpdate == null
-              ? 'Очікуємо повідомлення від датчиків…'
-              : 'Останнє повідомлення: ${Formatters.relative(lastUpdate)}',
-          style: muted,
-        ),
-      ],
+      ),
     );
   }
 }

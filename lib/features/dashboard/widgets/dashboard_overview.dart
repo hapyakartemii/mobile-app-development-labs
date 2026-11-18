@@ -28,7 +28,7 @@ class DashboardOverview extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         CurrentWeatherCard(conditions: forecast.current),
-        const SectionHeader(title: 'Датчики в реальному часі (MQTT)'),
+        const SectionHeader(title: 'MQTT-брокер'),
         const LiveTelemetrySection(),
         const SectionHeader(title: 'Прогноз на сьогодні'),
         HourlyForecastStrip(items: forecast.hourly),
