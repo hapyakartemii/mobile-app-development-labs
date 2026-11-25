@@ -1,149 +1,94 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_lab1/app/app_scope.dart';
-import 'package:flutter_lab1/domain/entities/app_user.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_lab1/app/di.dart';
 import 'package:flutter_lab1/domain/entities/weather_station.dart';
-import 'package:flutter_lab1/domain/repositories/auth_repository.dart';
-import 'package:flutter_lab1/domain/repositories/station_repository.dart';
-import 'package:flutter_lab1/features/dashboard/station_live_sync.dart';
 import 'package:flutter_lab1/features/dashboard/station_navigation.dart';
 import 'package:flutter_lab1/features/dashboard/widgets/dashboard_app_bar.dart';
 import 'package:flutter_lab1/features/dashboard/widgets/dashboard_view.dart';
 import 'package:flutter_lab1/features/shared/widgets/app_message.dart';
-import 'package:flutter_lab1/features/shared/widgets/async_body.dart';
+import 'package:flutter_lab1/features/shared/widgets/error_view.dart';
 import 'package:flutter_lab1/features/shared/widgets/loading_overlay.dart';
-import 'package:flutter_lab1/features/shared/widgets/offline_mode_dialog.dart';
+import 'package:flutter_lab1/logic/stations/stations_cubit.dart';
+import 'package:flutter_lab1/logic/stations/stations_state.dart';
+import 'package:flutter_lab1/logic/weather/weather_cubit.dart';
 
-/// Dashboard: stations from the server (or the cache when offline) loaded
-/// with a [FutureBuilder]; CRUD changes the list through [setState].
-class MainScreen extends StatefulWidget {
+/// Dashboard. Stateless: it only draws [StationsState] and sends user
+/// actions to [StationsCubit] / [WeatherCubit].
+class MainScreen extends StatelessWidget {
   const MainScreen({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  Widget build(BuildContext context) {
+    // The forecast belongs to this screen: created here, closed with it.
+    return BlocProvider(
+      create: (_) => getIt<WeatherCubit>()..load(),
+      child: const _DashboardScaffold(),
+    );
+  }
 }
 
-class _MainScreenState extends State<MainScreen> {
-  late final AppScope _scope = AppScope.of(context);
-  late Future<AppUser> _loading = _load();
-  AppUser? _user;
-  List<WeatherStation> _stations = const [];
-  bool _isBusy = false;
-  int _refreshCount = 0;
-  StationLiveSync? _liveSync;
+class _DashboardScaffold extends StatelessWidget {
+  const _DashboardScaffold();
 
-  IStationRepository get _repository => _scope.stationRepository;
-
-  @override
-  void dispose() {
-    _liveSync?.dispose();
-    super.dispose();
+  void _refresh(BuildContext context) {
+    context.read<StationsCubit>().refresh();
+    context.read<WeatherCubit>().load();
   }
 
-  /// Loads the user and their stations. Its [Future] drives the builder.
-  Future<AppUser> _load() async {
-    final user = await _scope.authRepository.currentUser();
-    if (user == null) {
-      throw const AuthException('Сесія закінчилась. Увійдіть знову.');
-    }
-    _stations = await _repository.getStations(user.id);
-    _user = user;
-    _liveSync ??= StationLiveSync(
-      telemetry: _scope.telemetryService,
-      repository: _repository,
-      userId: user.id,
-      currentStations: () => _stations,
-      onStationUpdated: (station) {
-        if (mounted) setState(() => _stations = _stations.replacing(station));
-      },
-    )..start();
-    if (_refreshCount == 0) unawaited(_warnIfOffline());
-    return user;
-  }
-
-  /// Launched from the saved session without the internet: warn once.
-  Future<void> _warnIfOffline() async {
-    final isOnline = await _scope.connectivityService.isOnline();
-    if (!isOnline && mounted) await showOfflineModeDialog(context);
-  }
-
-  void _refresh() => setState(() {
-    _refreshCount++;
-    _loading = _load();
-  });
-
-  /// Opens the form; creates a new station, or updates [station] if given.
-  Future<void> _saveStation([WeatherStation? station]) async {
+  /// Form → cubit: create a new station, or edit [station] if given.
+  Future<void> _save(BuildContext context, [WeatherStation? station]) async {
+    final cubit = context.read<StationsCubit>();
     final draft = await openStationForm(context, station);
     if (draft == null) return;
-    final message = station == null ? 'Станцію додано' : 'Зміни збережено';
-    await _mutate(message, (userId) async {
-      if (station == null) {
-        return [..._stations, await _repository.createStation(userId, draft)];
-      }
-      final updated = await _repository.updateStation(
-        userId,
-        station.id,
-        draft,
-      );
-      return _stations.replacing(updated);
-    });
+    await (station == null ? cubit.add(draft) : cubit.edit(station, draft));
   }
 
-  Future<void> _deleteStation(WeatherStation station) async {
-    if (!await confirmStationDeletion(context, station)) return;
-    await _mutate('Станцію «${station.name}» видалено', (userId) async {
-      await _repository.deleteStation(userId, station.id);
-      return _stations.without(station.id);
-    });
-  }
-
-  /// Runs a repository call with a loading overlay; applies the new list.
-  Future<void> _mutate(
-    String successMessage,
-    Future<List<WeatherStation>> Function(String userId) operation,
-  ) async {
-    final user = _user;
-    if (user == null) return;
-    setState(() => _isBusy = true);
-    try {
-      final stations = await operation(user.id);
-      if (!mounted) return;
-      setState(() => _stations = stations);
-      showAppMessage(context, successMessage);
-    } on StationException catch (error) {
-      if (mounted) showAppMessage(context, error.message);
-    } finally {
-      if (mounted) setState(() => _isBusy = false);
+  Future<void> _delete(BuildContext context, WeatherStation station) async {
+    final cubit = context.read<StationsCubit>();
+    if (await confirmStationDeletion(context, station)) {
+      await cubit.delete(station);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: DashboardAppBar(onRefresh: _refresh),
-      floatingActionButton: _user == null
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: _isBusy ? null : _saveStation,
-              icon: const Icon(Icons.add),
-              label: const Text('Станція'),
-            ),
-      body: AsyncBody<AppUser>(
-        future: _loading,
-        onRetry: _refresh,
-        builder: (context, _) => LoadingOverlay(
-          isLoading: _isBusy,
-          child: DashboardView(
-            refreshCount: _refreshCount,
-            stations: _stations,
-            onAdd: _saveStation,
-            onOpen: (station) => openStationDetails(context, station),
-            onEdit: _saveStation,
-            onDelete: _deleteStation,
+    return BlocConsumer<StationsCubit, StationsState>(
+      // One-off feedback (added / saved / deleted / error) as a SnackBar.
+      listenWhen: (previous, current) =>
+          previous.messageId != current.messageId,
+      listener: (context, state) {
+        if (state.message case final message?) {
+          showAppMessage(context, message);
+        }
+      },
+      builder: (context, state) => Scaffold(
+        appBar: DashboardAppBar(onRefresh: () => _refresh(context)),
+        floatingActionButton: state.status == StationsStatus.loaded
+            ? FloatingActionButton.extended(
+                onPressed: state.isBusy ? null : () => _save(context),
+                icon: const Icon(Icons.add),
+                label: const Text('Станція'),
+              )
+            : null,
+        body: switch (state.status) {
+          StationsStatus.initial || StationsStatus.loading => const Center(
+            child: CircularProgressIndicator(),
           ),
-        ),
+          StationsStatus.failure => ErrorView(
+            message: state.error ?? 'Не вдалося завантажити станції.',
+            onAction: () => context.read<StationsCubit>().refresh(),
+          ),
+          StationsStatus.loaded => LoadingOverlay(
+            isLoading: state.isBusy,
+            child: DashboardView(
+              stations: state.stations,
+              onAdd: () => _save(context),
+              onOpen: (station) => openStationDetails(context, station),
+              onEdit: (station) => _save(context, station),
+              onDelete: (station) => _delete(context, station),
+            ),
+          ),
+        },
       ),
     );
   }

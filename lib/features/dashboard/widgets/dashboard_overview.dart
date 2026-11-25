@@ -10,14 +10,8 @@ import 'package:flutter_lab1/features/shared/widgets/section_header.dart';
 /// Weather forecast, MQTT broker card and readings of the main (first)
 /// station.
 class DashboardOverview extends StatelessWidget {
-  const DashboardOverview({
-    required this.refreshCount,
-    required this.mainStation,
-    super.key,
-  });
+  const DashboardOverview({required this.mainStation, super.key});
 
-  /// Changes on "refresh"; used as the forecast's key to reload it.
-  final int refreshCount;
   final WeatherStation? mainStation;
 
   @override
@@ -27,7 +21,7 @@ class DashboardOverview extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        WeatherSection(key: ValueKey(refreshCount)),
+        const WeatherSection(),
         const SectionHeader(title: 'MQTT-брокер'),
         const LiveTelemetrySection(),
         if (station != null) ...[

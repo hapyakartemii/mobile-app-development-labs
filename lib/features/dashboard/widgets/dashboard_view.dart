@@ -10,7 +10,6 @@ import 'package:flutter_lab1/features/shared/widgets/page_body.dart';
 /// Holds no state; [MainScreen] passes data and callbacks in.
 class DashboardView extends StatelessWidget {
   const DashboardView({
-    required this.refreshCount,
     required this.stations,
     required this.onAdd,
     required this.onOpen,
@@ -22,7 +21,6 @@ class DashboardView extends StatelessWidget {
   /// Room so the floating button doesn't cover the last card.
   static const double _fabClearance = 80;
 
-  final int refreshCount;
   final List<WeatherStation> stations;
   final VoidCallback onAdd;
   final ValueChanged<WeatherStation> onOpen;
@@ -31,10 +29,7 @@ class DashboardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final overview = DashboardOverview(
-      refreshCount: refreshCount,
-      mainStation: stations.firstOrNull,
-    );
+    final overview = DashboardOverview(mainStation: stations.firstOrNull);
     final stationList = StationList(
       stations: stations,
       onAdd: onAdd,

@@ -1,46 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_lab1/app/app_routes.dart';
-import 'package:flutter_lab1/app/app_scope.dart';
+import 'package:flutter_lab1/app/app_shell.dart';
+import 'package:flutter_lab1/app/di.dart';
 import 'package:flutter_lab1/app/theme/app_theme.dart';
-import 'package:flutter_lab1/domain/repositories/auth_repository.dart';
-import 'package:flutter_lab1/domain/repositories/station_repository.dart';
-import 'package:flutter_lab1/domain/repositories/weather_repository.dart';
-import 'package:flutter_lab1/domain/services/connectivity_service.dart';
-import 'package:flutter_lab1/domain/services/telemetry_service.dart';
-import 'package:flutter_lab1/features/shared/widgets/connectivity_banner.dart';
+import 'package:flutter_lab1/logic/auth/auth_cubit.dart';
+import 'package:flutter_lab1/logic/connectivity/connectivity_cubit.dart';
+import 'package:flutter_lab1/logic/stations/stations_cubit.dart';
+import 'package:flutter_lab1/logic/telemetry/telemetry_cubit.dart';
 
+/// Root widget: puts the app-wide cubits above [MaterialApp], so every
+/// screen (route) can read them with `context.read` / `BlocBuilder`.
 class MeteoApp extends StatelessWidget {
-  const MeteoApp({
-    required this.authRepository,
-    required this.stationRepository,
-    required this.weatherRepository,
-    required this.connectivityService,
-    required this.telemetryService,
-    super.key,
-  });
+  const MeteoApp({super.key});
 
-  final IAuthRepository authRepository;
-  final IStationRepository stationRepository;
-  final IWeatherRepository weatherRepository;
-  final IConnectivityService connectivityService;
-  final ITelemetryService telemetryService;
+  static final _navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {
-    return AppScope(
-      authRepository: authRepository,
-      stationRepository: stationRepository,
-      weatherRepository: weatherRepository,
-      connectivityService: connectivityService,
-      telemetryService: telemetryService,
+    return MultiBlocProvider(
+      providers: [
+        // Auto-login: the saved session is checked as soon as the app opens.
+        BlocProvider(create: (_) => getIt<AuthCubit>()..checkSession()),
+        BlocProvider(create: (_) => getIt<ConnectivityCubit>()),
+        BlocProvider(create: (_) => getIt<StationsCubit>()),
+        BlocProvider(create: (_) => getIt<TelemetryCubit>()),
+      ],
       child: MaterialApp(
         title: 'Метеостанція',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
+        navigatorKey: _navigatorKey,
         initialRoute: AppRoutes.gate,
         onGenerateRoute: AppRoutes.onGenerateRoute,
-        // Wraps every screen, so the offline warning is always visible.
-        builder: (context, child) => ConnectivityBanner(child: child!),
+        builder: (context, child) =>
+            AppShell(navigatorKey: _navigatorKey, child: child!),
       ),
     );
   }

@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_lab1/app/theme/app_theme.dart';
-import 'package:flutter_lab1/domain/repositories/auth_repository.dart';
-import 'package:flutter_lab1/domain/repositories/station_repository.dart';
-import 'package:flutter_lab1/domain/repositories/weather_repository.dart';
 import 'package:flutter_lab1/features/shared/widgets/app_button.dart';
 
-/// Error state of a [FutureBuilder]: icon, message and an action button
+/// Error state of a screen: icon, message and an action button
 /// (usually "try again") instead of a crash or an endless spinner.
 class ErrorView extends StatelessWidget {
   const ErrorView({
@@ -18,15 +15,6 @@ class ErrorView extends StatelessWidget {
   final String message;
   final String actionLabel;
   final VoidCallback onAction;
-
-  /// Text for any error a repository can throw; unknown ones get a
-  /// generic message rather than a stack trace.
-  static String messageOf(Object? error) => switch (error) {
-    StationException(:final message) => message,
-    AuthException(:final message) => message,
-    WeatherException(:final message) => message,
-    _ => 'Не вдалося завантажити дані. Спробуйте ще раз.',
-  };
 
   @override
   Widget build(BuildContext context) {

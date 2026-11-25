@@ -1,55 +1,37 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_lab1/app/app_scope.dart';
-import 'package:flutter_lab1/domain/entities/forecast.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_lab1/features/dashboard/widgets/current_weather_card.dart';
 import 'package:flutter_lab1/features/dashboard/widgets/hourly_forecast_strip.dart';
-import 'package:flutter_lab1/features/shared/widgets/error_view.dart';
 import 'package:flutter_lab1/features/shared/widgets/notice_banner.dart';
 import 'package:flutter_lab1/features/shared/widgets/section_header.dart';
+import 'package:flutter_lab1/logic/weather/weather_cubit.dart';
+import 'package:flutter_lab1/logic/weather/weather_state.dart';
 
-/// Forecast from the Open-Meteo REST API, shown with a [FutureBuilder]:
-/// loading → spinner, success → card and hourly strip, error → notice.
-///
-/// The request starts once in [State.initState], not in `build`, so
-/// rebuilds don't send it again. A new `key` from the parent reloads it.
-class WeatherSection extends StatefulWidget {
+/// Forecast drawn from [WeatherState]: spinner, data or an inline notice.
+class WeatherSection extends StatelessWidget {
   const WeatherSection({super.key});
 
   @override
-  State<WeatherSection> createState() => _WeatherSectionState();
-}
-
-class _WeatherSectionState extends State<WeatherSection> {
-  late final Future<WeatherForecast> _forecast = AppScope.of(
-    context,
-  ).weatherRepository.getForecast();
-
-  @override
   Widget build(BuildContext context) {
-    return FutureBuilder<WeatherForecast>(
-      future: _forecast,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const SizedBox(
-            height: 160,
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-        final forecast = snapshot.data;
-        if (snapshot.hasError || forecast == null) {
-          return NoticeBanner(
-            icon: Icons.cloud_off_outlined,
-            message: ErrorView.messageOf(snapshot.error),
-          );
-        }
-        return Column(
+    return BlocBuilder<WeatherCubit, WeatherState>(
+      builder: (context, state) => switch (state) {
+        WeatherState(status: WeatherStatus.loaded, :final forecast?) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             CurrentWeatherCard(conditions: forecast.current),
             const SectionHeader(title: 'Прогноз на найближчі години'),
             HourlyForecastStrip(items: forecast.hourly),
           ],
-        );
+        ),
+        WeatherState(status: WeatherStatus.failure, :final error) =>
+          NoticeBanner(
+            icon: Icons.cloud_off_outlined,
+            message: error ?? 'Прогноз недоступний.',
+          ),
+        _ => const SizedBox(
+          height: 160,
+          child: Center(child: CircularProgressIndicator()),
+        ),
       },
     );
   }
