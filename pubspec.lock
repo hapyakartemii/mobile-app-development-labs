@@ -384,6 +384,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "10.14.0"
+  my_flashlight_plugin:
+    dependency: "direct main"
+    description:
+      path: "."
+      ref: HEAD
+      resolved-ref: b103b8af0ab1b1cd9eaa5de3893e509efd8be9d3
+      url: "https://github.com/hapyakartemii/my_flashlight_plugin.git"
+    source: git
+    version: "1.0.0"
   nested:
     dependency: transitive
     description:

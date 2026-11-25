@@ -17,6 +17,7 @@ import 'package:flutter_lab1/domain/services/connectivity_service.dart';
 import 'package:flutter_lab1/domain/services/telemetry_service.dart';
 import 'package:flutter_lab1/logic/auth/auth_cubit.dart';
 import 'package:flutter_lab1/logic/connectivity/connectivity_cubit.dart';
+import 'package:flutter_lab1/logic/flashlight/flashlight_cubit.dart';
 import 'package:flutter_lab1/logic/stations/stations_cubit.dart';
 import 'package:flutter_lab1/logic/telemetry/telemetry_cubit.dart';
 import 'package:flutter_lab1/logic/weather/weather_cubit.dart';
@@ -78,5 +79,6 @@ Future<void> configureDependencies() async {
     ..registerFactory(() => ConnectivityCubit(getIt()))
     ..registerFactory(() => StationsCubit(getIt(), getIt()))
     ..registerFactory(() => TelemetryCubit(getIt(), getIt()))
-    ..registerFactory(() => WeatherCubit(getIt()));
+    ..registerFactory(() => WeatherCubit(getIt()))
+    ..registerFactory(FlashlightCubit.new);
 }

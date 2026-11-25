@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_lab1/app/theme/app_theme.dart';
+import 'package:flutter_lab1/features/profile/widgets/flashlight_easter_egg.dart';
 import 'package:flutter_lab1/features/profile/widgets/profile_header.dart';
 import 'package:flutter_lab1/features/shared/formatters.dart';
 import 'package:flutter_lab1/features/shared/widgets/app_button.dart';
@@ -49,7 +50,8 @@ class UserProfileScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ProfileHeader(user: user),
+                // Easter egg: long press on the avatar = flashlight.
+                FlashlightEasterEgg(child: ProfileHeader(user: user)),
                 const SectionHeader(title: 'Особисті дані'),
                 Card(
                   child: Column(
