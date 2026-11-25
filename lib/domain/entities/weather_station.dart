@@ -94,3 +94,17 @@ class StationDraft {
   final String name;
   final String location;
 }
+
+/// Immutable list helpers: each returns a new list.
+extension StationListChanges on List<WeatherStation> {
+  /// [station] put in place of the one with the same id.
+  List<WeatherStation> replacing(WeatherStation station) => [
+    for (final s in this)
+      if (s.id == station.id) station else s,
+  ];
+
+  List<WeatherStation> without(String stationId) => [
+    for (final s in this)
+      if (s.id != stationId) s,
+  ];
+}

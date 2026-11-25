@@ -97,6 +97,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.8.0"
+  dio:
+    dependency: "direct main"
+    description:
+      name: dio
+      sha256: "852ec3b48cc431ac04fff978413c541502b67ffc3e26921e74e3d994694192c1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.11.1"
+  dio_web_adapter:
+    dependency: transitive
+    description:
+      name: dio_web_adapter
+      sha256: "3a1b2cd7be71086f38504956e3ebcd2837288d231ff454bafa78021244102bfc"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.2"
   event_bus:
     dependency: transitive
     description:
@@ -216,6 +232,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.2"
+  http_methods:
+    dependency: transitive
+    description:
+      name: http_methods
+      sha256: "6bccce8f1ec7b5d701e7921dca35e202d425b57e317ba1a37f2638590e29e566"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.1"
+  http_parser:
+    dependency: transitive
+    description:
+      name: http_parser
+      sha256: "178d74305e7866013777bab2c3d8726205dc5a4dd935297175b19a23a2e66571"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.1.2"
   jni:
     dependency: transitive
     description:
@@ -304,6 +336,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.18.0"
+  mime:
+    dependency: transitive
+    description:
+      name: mime
+      sha256: bd47de35f07e27267e69c8c8b22edf9473bfee170a60d60fcc93730c5144b7f6
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.0"
   mqtt_client:
     dependency: "direct main"
     description:
@@ -504,6 +544,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.1"
+  shelf:
+    dependency: "direct dev"
+    description:
+      name: shelf
+      sha256: e75e9cf311d7fd712048038cc17c25199c38536c20330d53e7db058b543d5a48
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.3"
+  shelf_router:
+    dependency: "direct dev"
+    description:
+      name: shelf_router
+      sha256: "2b3eb66f2e7651c9f0af28538e0de53bc02dc102d965d55b13e6ffceafad10e3"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.5"
   sky_engine:
     dependency: transitive
     description: flutter
