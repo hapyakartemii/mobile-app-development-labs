@@ -2,6 +2,7 @@
     <!-- MQTT broker and connectivity checks need the network. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
+        android:usesCleartextTraffic="true"
         android:label="flutter_lab1"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">

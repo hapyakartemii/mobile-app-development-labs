@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_lab1/logic/ui/visibility_cubit.dart';
 
-/// Form field with an icon; password fields get a visibility toggle.
+/// Form field with an icon; password fields get a visibility toggle kept
+/// in a small [VisibilityCubit] instead of `setState`.
 /// Errors from [validator] appear under the field.
-class AppTextField extends StatefulWidget {
+class AppTextField extends StatelessWidget {
   const AppTextField({
     required this.label,
     required this.icon,
@@ -29,41 +32,37 @@ class AppTextField extends StatefulWidget {
   final bool isPassword;
 
   @override
-  State<AppTextField> createState() => _AppTextFieldState();
-}
-
-class _AppTextFieldState extends State<AppTextField> {
-  late bool _obscured = widget.isPassword;
-
-  void _toggleVisibility() => setState(() => _obscured = !_obscured);
-
-  @override
   Widget build(BuildContext context) {
-    return TextFormField(
-      controller: widget.controller,
-      validator: widget.validator,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
-      keyboardType: widget.keyboardType,
-      textInputAction: widget.textInputAction,
-      onFieldSubmitted: widget.onSubmitted,
-      enabled: widget.enabled,
-      obscureText: _obscured,
-      decoration: InputDecoration(
-        labelText: widget.label,
-        hintText: widget.hint,
-        errorMaxLines: 2,
-        prefixIcon: Icon(widget.icon),
-        suffixIcon: widget.isPassword
-            ? IconButton(
-                onPressed: _toggleVisibility,
-                tooltip: _obscured ? 'Показати пароль' : 'Сховати пароль',
-                icon: Icon(
-                  _obscured
-                      ? Icons.visibility_outlined
-                      : Icons.visibility_off_outlined,
-                ),
-              )
-            : null,
+    return BlocProvider(
+      create: (_) => VisibilityCubit(hidden: isPassword),
+      child: BlocBuilder<VisibilityCubit, bool>(
+        builder: (context, hidden) => TextFormField(
+          controller: controller,
+          validator: validator,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          keyboardType: keyboardType,
+          textInputAction: textInputAction,
+          onFieldSubmitted: onSubmitted,
+          enabled: enabled,
+          obscureText: hidden,
+          decoration: InputDecoration(
+            labelText: label,
+            hintText: hint,
+            errorMaxLines: 2,
+            prefixIcon: Icon(icon),
+            suffixIcon: isPassword
+                ? IconButton(
+                    onPressed: context.read<VisibilityCubit>().toggle,
+                    tooltip: hidden ? 'Показати пароль' : 'Сховати пароль',
+                    icon: Icon(
+                      hidden
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                    ),
+                  )
+                : null,
+          ),
+        ),
       ),
     );
   }
