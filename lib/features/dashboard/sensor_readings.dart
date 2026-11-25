@@ -73,6 +73,7 @@ extension WeatherConditionUi on WeatherCondition {
     WeatherCondition.partlyCloudy => Icons.wb_cloudy_outlined,
     WeatherCondition.cloudy => Icons.cloud,
     WeatherCondition.rain => Icons.grain,
+    WeatherCondition.snow => Icons.ac_unit,
   };
 
   String get label => switch (this) {
@@ -80,5 +81,6 @@ extension WeatherConditionUi on WeatherCondition {
     WeatherCondition.partlyCloudy => 'Мінлива хмарність',
     WeatherCondition.cloudy => 'Хмарно',
     WeatherCondition.rain => 'Дощ',
+    WeatherCondition.snow => 'Сніг',
   };
 }

@@ -1,4 +1,4 @@
-enum WeatherCondition { sunny, partlyCloudy, cloudy, rain }
+enum WeatherCondition { sunny, partlyCloudy, cloudy, rain, snow }
 
 /// Current conditions shown at the top of the dashboard.
 class CurrentConditions {
